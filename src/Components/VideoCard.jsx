@@ -3,7 +3,7 @@ import { BsCheckCircleFill } from "react-icons/bs";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import { createTimeString } from "../utils/timeDestance";
 import { AiOutlineClockCircle } from "react-icons/ai";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { BiSlideshow } from "react-icons/bi";
 import { FaPlay } from "react-icons/fa";
 import ReactPlayer from "react-player";
@@ -29,11 +29,12 @@ const VideoCard = ({ details, type, id, refProp, enablePlayMode }) => {
   const { snippet } = details;
   const [isHoverd, setIsHoverd] = useState(false);
   const [playMode, setPlayMode] = useState(false);
-  const [offsetLeft, setOffsetLeft] = useState(0);
-  const [containerWidth, setContainerWidth] = useState(0);
-  const [itemWidth, setItemWidth] = useState(0);
-  const [containerOffsetLeft, setContainerOffsetLeft] = useState(0);
-
+  const dimensions = useRef({
+    offsetLeft: 0,
+    containerWidth: 0,
+    itemWidth: 0,
+    containerOffsetLeft: 0,
+  });
   const mouseEnterHandler = () => {
     setIsHoverd(true);
   };
@@ -42,23 +43,49 @@ const VideoCard = ({ details, type, id, refProp, enablePlayMode }) => {
   };
 
   useEffect(() => {
-    if (containerWidth !== refProp?.current?.parentElement?.parentElement?.clientWidth) {
-      setContainerWidth(refProp?.current?.parentElement?.parentElement?.clientWidth);
+    if (
+      dimensions?.current?.containerWidth !==
+      refProp?.current?.parentElement?.parentElement?.clientWidth
+    ) {
+      dimensions.current = {
+        ...dimensions.current,
+        containerWidth:
+          refProp?.current?.parentElement?.parentElement?.clientWidth,
+      };
     }
-    if (offsetLeft !== refProp?.current?.parentElement?.offsetLeft) {
-      setOffsetLeft(refProp?.current?.parentElement?.offsetLeft);
+    if (
+      dimensions?.current?.offsetLeft !==
+      refProp?.current?.parentElement?.offsetLeft
+    ) {
+      dimensions.current = {
+        ...dimensions.current,
+        offsetLeft: refProp?.current?.parentElement?.offsetLeft,
+      };
     }
-    if (itemWidth !== refProp?.current?.clientWidth) {
-      setItemWidth(refProp?.current?.clientWidth);
+    if (dimensions?.current?.itemWidth !== refProp?.current?.clientWidth) {
+      dimensions.current = {
+        ...dimensions.current,
+        itemWidth: refProp?.current?.clientWidth,
+      };
     }
-    if (containerOffsetLeft !== refProp?.current?.parentElement?.parentElement?.offsetLeft) {
-      setContainerOffsetLeft(refProp?.current?.parentElement?.parentElement?.offsetLeft);
+    if (
+      dimensions?.current?.containerOffsetLeft !==
+      refProp?.current?.parentElement?.parentElement?.offsetLeft
+    ) {
+      dimensions.current = {
+        ...dimensions.current,
+        containerOffsetLeft:
+          refProp?.current?.parentElement?.parentElement?.offsetLeft,
+      };
     }
-  }, [isHoverd, containerWidth, offsetLeft, itemWidth, containerOffsetLeft, refProp]);
+  }, [isHoverd, refProp]);
 
-  const isLeftElement = offsetLeft - containerOffsetLeft < itemWidth;
+  const isLeftElement =
+    dimensions?.current?.offsetLeft - dimensions?.current?.containerOffsetLeft <
+    dimensions?.current?.itemWidth;
   const isRightElement =
-    offsetLeft - containerOffsetLeft > containerWidth - 2 * itemWidth;
+    dimensions?.current?.offsetLeft - dimensions?.current?.containerOffsetLeft >
+    dimensions?.current?.containerWidth - 2 * dimensions?.current?.itemWidth;
   useEffect(() => {
     setPlayMode(false);
     let timeout = setTimeout(() => {
@@ -82,13 +109,18 @@ const VideoCard = ({ details, type, id, refProp, enablePlayMode }) => {
         maxWidth: snippet?.thumbnails?.medium?.width || 320,
       }}
       className={`mx-auto transition-all duration-700 
-          ${enablePlayMode && playMode && type === "video" ? "scale-150 z-50 absolute " : ""}
-          ${enablePlayMode && isLeftElement
-          ? " origin-left "
-          : enablePlayMode && isRightElement
-            ? "origin-right"
-            : ""
-        } 
+          ${
+            enablePlayMode && playMode && type === "video"
+              ? "scale-150 z-50 absolute "
+              : ""
+          }
+          ${
+            enablePlayMode && isLeftElement
+              ? " origin-left "
+              : enablePlayMode && isRightElement
+              ? "origin-right"
+              : ""
+          } 
       `}
       ref={refProp}
     >
@@ -120,12 +152,14 @@ const VideoCard = ({ details, type, id, refProp, enablePlayMode }) => {
               className="z-10"
             />
             <div
-              className={`h-full w-full absolute top-0 left-0 bg-[#1e1e1edd] transition-all duration-300 ${isHoverd ? "opacity-100" : "opacity-0"
-                }`}
+              className={`h-full w-full absolute top-0 left-0 bg-[#1e1e1edd] transition-all duration-300 ${
+                isHoverd ? "opacity-100" : "opacity-0"
+              }`}
             />
             <div
-              className={` h-full w-full flex justify-center items-center gap-2 absolute top-0 left-0 transition-all duration-500 ${isHoverd ? "opacity-100" : "opacity-0"
-                }`}
+              className={` h-full w-full flex justify-center items-center gap-2 absolute top-0 left-0 transition-all duration-500 ${
+                isHoverd ? "opacity-100" : "opacity-0"
+              }`}
             >
               {type === "video" ? (
                 <>
@@ -139,19 +173,19 @@ const VideoCard = ({ details, type, id, refProp, enablePlayMode }) => {
                 </>
               )}
             </div>
-            {
-              enablePlayMode && (
-                <div
-                  className={` h-full w-full flex justify-start items-end absolute top-0 left-0 transition-all duration-500 ${isHoverd ? "opacity-100" : "opacity-0"
-                    }`}
-                >
-                  {type === "video" ? (
-                    <p className="px-2 text-[#fc1503] w-full ">Keep Hovering to play</p>
-                  ) : null}
-                </div>
-              )
-            }
-
+            {enablePlayMode && (
+              <div
+                className={` h-full w-full flex justify-start items-end absolute top-0 left-0 transition-all duration-500 ${
+                  isHoverd ? "opacity-100" : "opacity-0"
+                }`}
+              >
+                {type === "video" ? (
+                  <p className="px-2 text-[#fc1503] w-full ">
+                    Keep Hovering to play
+                  </p>
+                ) : null}
+              </div>
+            )}
           </>
         )}
       </Link>
